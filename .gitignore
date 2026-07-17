@@ -1,0 +1,12 @@
+__pycache__/
+.venv/
+data/cache/
+data/output/
+data/ui_raw_cache/
+data/*.sqlite3
+data/*.log
+data/*.err
+data/input/
+properties.csv
+occupancy.csv
+.streamlit/secrets.toml

@@ -1,0 +1,36 @@
+{
+  "sample_size": 100,
+  "sample_seed": 20260714,
+  "overpass_urls": [
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass-api.de/api/interpreter"
+  ],
+  "road_radius_m": 500,
+  "poi_radius_m": 1000,
+  "request_delay_seconds": 1.5,
+  "request_timeout_seconds": 35,
+  "retry_attempts": 4,
+  "initial_weights": {
+    "connectivity": 0.5,
+    "road_width": 0.5
+  },
+  "score_thresholds": {
+    "width_min_m": 2.0,
+    "width_max_m": 10.0,
+    "snap_distance_good_m": 25.0,
+    "snap_distance_poor_m": 150.0,
+    "guest_poi_target": 12
+  },
+  "road_width_fallback_m": {
+    "motorway": 12.0,
+    "trunk": 11.0,
+    "primary": 9.0,
+    "secondary": 8.0,
+    "tertiary": 7.0,
+    "unclassified": 6.0,
+    "residential": 5.5,
+    "living_street": 4.5,
+    "service": 4.0,
+    "track": 3.0
+  }
+}
