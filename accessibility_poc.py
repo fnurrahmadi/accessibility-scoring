@@ -92,8 +92,8 @@ out body;
 out skel qt;'''
 
 
-def fetch_overpass(query: str, config: dict[str, Any], cache_file: Path) -> dict[str, Any]:
-    if cache_file.exists():
+def fetch_overpass(query: str, config: dict[str, Any], cache_file: Path | None) -> dict[str, Any]:
+    if cache_file and cache_file.exists():
         return json.loads(cache_file.read_text(encoding="utf-8"))
     payload = urlencode({"data": query}).encode("utf-8")
     endpoints = config.get("overpass_urls") or [config["overpass_url"]]
@@ -103,8 +103,9 @@ def fetch_overpass(query: str, config: dict[str, Any], cache_file: Path) -> dict
         try:
             with urlopen(request, timeout=config["request_timeout_seconds"]) as response:
                 data = json.loads(response.read().decode("utf-8"))
-            cache_file.parent.mkdir(parents=True, exist_ok=True)
-            cache_file.write_text(json.dumps(data), encoding="utf-8")
+            if cache_file:
+                cache_file.parent.mkdir(parents=True, exist_ok=True)
+                cache_file.write_text(json.dumps(data), encoding="utf-8")
             return data
         except HTTPError as error:
             if error.code not in {429, 504} or attempt == config["retry_attempts"] - 1:
