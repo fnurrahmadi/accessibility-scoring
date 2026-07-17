@@ -144,6 +144,6 @@ planned future enhancements.
 ## Deploy online
 
 The application is prepared for deployment with Streamlit Community Cloud and
-Supabase Postgres. Follow [DEPLOYMENT.md](DEPLOYMENT.md) to create the database,
-add the connection secret, deploy from GitHub, and restrict the app to approved
-team members.
+Supabase Postgres. Follow the complete [teammate setup and deployment guide](DEPLOYMENT.md)
+to set up local development, create the database, configure secrets, deploy from
+GitHub, restrict access, test, operate, and troubleshoot the app.
