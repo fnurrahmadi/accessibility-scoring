@@ -192,6 +192,82 @@ def nearest_road(lat: float, lon: float, roads: list[dict[str, Any]], nodes: dic
     return winner, (best if winner else None)
 
 
+def vehicle_access_score(
+    tags: dict[str, str], raw_width: float | None, snap_distance: float | None,
+    thresholds: dict[str, float], has_nearest_road: bool,
+) -> float:
+    """Score practical vehicle/motorcycle arrival from the final approach road."""
+    road_base = ROAD_SCORES.get(tags.get("highway", ""), 30)
+    motorcycle_allowed = tags.get("motorcycle") == "yes"
+    if raw_width is None:
+        motorcycle_width_score = 60
+    elif raw_width >= 2:
+        motorcycle_width_score = 100
+    elif raw_width >= 1:
+        motorcycle_width_score = 60
+    else:
+        motorcycle_width_score = 25
+    snap_score = 100 if snap_distance is not None and snap_distance <= thresholds["snap_distance_good_m"] else (0 if snap_distance is None else clamp(100 * (thresholds["snap_distance_poor_m"] - snap_distance) / (thresholds["snap_distance_poor_m"] - thresholds["snap_distance_good_m"])))
+    if not has_nearest_road or ((tags.get("motor_vehicle") == "no" or tags.get("vehicle") == "no") and not motorcycle_allowed):
+        return 0.0
+    restrictions = 0
+    if tags.get("access") == "private":
+        restrictions += 15 if motorcycle_allowed else 35
+    if tags.get("surface") in {"gravel", "ground", "dirt", "sand", "unpaved"}:
+        restrictions += 15
+    if tags.get("noexit") == "yes":
+        restrictions += 10
+    return round(clamp(0.4 * road_base + 0.3 * motorcycle_width_score + 0.3 * snap_score - restrictions), 1)
+
+
+def vehicle_access_score_v3(
+    tags: dict[str, str], raw_width: float | None, snap_distance: float | None,
+    thresholds: dict[str, float], has_nearest_road: bool,
+) -> tuple[float, bool]:
+    """Return the V3 final-approach score and whether access is explicitly blocked."""
+    motorcycle_allowed = tags.get("motorcycle") == "yes"
+    hard_blocked = (
+        not has_nearest_road
+        or (
+            tags.get("access") == "no"
+            or tags.get("motor_vehicle") == "no"
+            or tags.get("vehicle") == "no"
+        ) and not motorcycle_allowed
+    )
+    if hard_blocked:
+        return 0.0, has_nearest_road
+
+    road_class = ROAD_SCORES.get(tags.get("highway", ""), 30)
+    if raw_width is None:
+        motorcycle_width = 60
+    elif raw_width >= 2:
+        motorcycle_width = 100
+    elif raw_width >= 1:
+        motorcycle_width = 65
+    else:
+        motorcycle_width = 25
+    proximity = 100 if snap_distance is not None and snap_distance <= thresholds["snap_distance_good_m"] else (
+        0 if snap_distance is None else clamp(
+            100 * (thresholds["snap_distance_poor_m"] - snap_distance)
+            / (thresholds["snap_distance_poor_m"] - thresholds["snap_distance_good_m"])
+        )
+    )
+    access_quality = 100
+    if tags.get("access") == "private":
+        access_quality = 75 if motorcycle_allowed else 55
+    elif tags.get("access") == "destination":
+        access_quality = 75
+    elif tags.get("access") == "permissive":
+        access_quality = 85
+    if tags.get("surface") in {"gravel", "ground", "dirt", "sand", "unpaved"}:
+        access_quality = min(access_quality, 65)
+    if tags.get("noexit") == "yes":
+        access_quality = min(access_quality, 75)
+    if tags.get("oneway") == "yes":
+        access_quality = min(access_quality, 85)
+    return round(0.35 * road_class + 0.25 * motorcycle_width + 0.20 * proximity + 0.20 * access_quality, 1), False
+
+
 def score_property(row: dict[str, str], data: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
     lat, lon = float(row["LATITUDE"]), float(row["LONGITUDE"])
     elements = data.get("elements", [])
@@ -209,16 +285,13 @@ def score_property(row: dict[str, str], data: dict[str, Any], config: dict[str, 
     available = [(score, weight) for score, weight in available if score is not None]
     overall = round(sum(score * weight for score, weight in available) / sum(weight for _, weight in available), 1) if available else None
 
-    road_base = ROAD_SCORES.get(tags.get("highway", ""), 30)
-    restrictions = 0
-    if tags.get("access") in {"no", "private"} or tags.get("motor_vehicle") == "no" or tags.get("vehicle") == "no":
-        restrictions += 60
-    if tags.get("surface") in {"gravel", "ground", "dirt", "sand", "unpaved"}:
-        restrictions += 20
-    if tags.get("noexit") == "yes":
-        restrictions += 15
-    snap_score = 100 if snap_distance is not None and snap_distance <= thresholds["snap_distance_good_m"] else (0 if snap_distance is None else clamp(100 * (thresholds["snap_distance_poor_m"] - snap_distance) / (thresholds["snap_distance_poor_m"] - thresholds["snap_distance_good_m"])))
-    vehicle_score = round(clamp(0.4 * road_base + 0.3 * (width_score if width_score is not None else 45) + 0.3 * snap_score - restrictions), 1)
+    vehicle_score = vehicle_access_score(tags, raw_width, snap_distance, thresholds, nearest is not None)
+    snap_score = 100 if snap_distance is not None and snap_distance <= thresholds["snap_distance_good_m"] else (
+        0 if snap_distance is None else clamp(
+            100 * (thresholds["snap_distance_poor_m"] - snap_distance)
+            / (thresholds["snap_distance_poor_m"] - thresholds["snap_distance_good_m"])
+        )
+    )
 
     poi_nodes = [e for e in elements if e.get("type") == "node" and (e.get("tags", {}).get("amenity") in POI_AMENITIES or e.get("tags", {}).get("highway") == "bus_stop" or e.get("tags", {}).get("public_transport") in {"platform", "stop_position"})]
     poi_categories = {e.get("tags", {}).get("amenity") or e.get("tags", {}).get("highway") or e.get("tags", {}).get("public_transport") for e in poi_nodes}
