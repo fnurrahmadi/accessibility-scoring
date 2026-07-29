@@ -21,6 +21,8 @@ FULL_POPULATION_OUTPUT = (
 )
 CHART_METRICS = [
     "overall_accessibility_score_v3",
+    "overall_accessibility_score_v4",
+    "overall_accessibility_score_v5",
     "base_accessibility_score_v3",
     "vehicle_access_score_v3",
     "connectivity_score_v3",
@@ -48,6 +50,8 @@ CHART_METRICS = [
 ]
 SCORE_METRICS = {
     "overall_accessibility_score_v3",
+    "overall_accessibility_score_v4",
+    "overall_accessibility_score_v5",
     "base_accessibility_score_v3",
     "vehicle_access_score_v3",
     "connectivity_score_v3",
