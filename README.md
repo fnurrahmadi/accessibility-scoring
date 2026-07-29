@@ -7,7 +7,8 @@ accessibility result with diagnostic component scores.
 
 This repository is designed to be cloned by another person and run under their
 own account. No property list, occupancy data, raw map cache, or saved
-assessments are required to use the single-property app.
+assessments are required to use the single-property app. A Supabase database is
+required for the Streamlit application.
 
 ## What the app does
 
@@ -23,7 +24,7 @@ assessments are required to use the single-property app.
    - guest-convenience score
    - operational-access score
    - data-confidence score
-5. It saves results locally in SQLite and lets the user download assessment
+5. It saves results in Supabase Postgres and lets the user download assessment
    history as CSV.
 
 The overall score is an adjustable additive combination of connectivity and
@@ -50,7 +51,7 @@ road width. The default is 50/50.
 - Python 3.11 or later (install it from [python.org](https://www.python.org/downloads/))
 - A GitHub account, if you are cloning from GitHub
 
-### Install and run
+### Install, configure, and run
 
 Open **Command Prompt** and run the following, replacing the GitHub URL with
 the repository URL supplied to you:
@@ -63,6 +64,11 @@ py -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 .venv\Scripts\python.exe -m streamlit run streamlit_app.py
 ```
+
+Before the final command, create `.streamlit\secrets.toml` by copying
+`.streamlit\secrets.toml.example` and replace `DATABASE_URL` with the Supabase
+**Session pooler** connection string. Full database and online-deployment steps
+are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 The terminal will show a local URL, normally `http://localhost:8501`. Open that
 address in a browser. For future starts, either run the final command again or
@@ -79,6 +85,10 @@ python3 -m venv .venv
 .venv/bin/python -m streamlit run streamlit_app.py
 ```
 
+Before running Streamlit, copy `.streamlit/secrets.toml.example` to
+`.streamlit/secrets.toml` and configure `DATABASE_URL` as described in
+[DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Prepare and push your own GitHub repository
 
 The person creating the repository should:
@@ -86,7 +96,7 @@ The person creating the repository should:
 1. Create a new **private** GitHub repository.
 2. Copy this project into it.
 3. Confirm that `.gitignore` is present before the first commit. It excludes
-   private property/occupancy inputs, SQLite history, caches, and output files.
+   private property/occupancy inputs, secrets, caches, and output files.
 4. Review the files staged for commit. Do not upload private coordinate data or
    exported assessment data unless this has been explicitly approved.
 5. Commit and push the source code. Collaborators can then clone it using the
@@ -131,9 +141,9 @@ Run the default 100-property POC:
 Batch upload in the Streamlit interface and a downloadable CSV template are
 planned future enhancements.
 
-## Deploy online later
+## Deploy online
 
-The local app uses SQLite, which is appropriate for a single local installation.
-For an online multi-user deployment, move the assessment/cache tables to a
-hosted Postgres database, keep connection details in the host's secret manager,
-and add access control and rate limiting before exposing the app to users.
+The application is prepared for deployment with Streamlit Community Cloud and
+Supabase Postgres. Follow the complete [teammate setup and deployment guide](DEPLOYMENT.md)
+to set up local development, create the database, configure secrets, deploy from
+GitHub, restrict access, test, operate, and troubleshoot the app.
